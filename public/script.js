@@ -68,7 +68,11 @@ async function uploadSingleFile(file) {
     pendingAttachments.push(data);
     updateAttachmentChip(chip, data);
   } catch (err) {
-    chip.querySelector('.attachment-name').textContent = 'Gagal: ' + err.message;
+    const isNetworkError = err instanceof TypeError && /fetch/i.test(err.message);
+    const msg = isNetworkError
+      ? 'Koneksi terputus — cek internet kamu & coba lagi'
+      : err.message;
+    chip.querySelector('.attachment-name').textContent = 'Gagal: ' + msg;
     chip.querySelector('.attachment-name').style.color = 'var(--danger)';
     setTimeout(() => chip.remove(), 4500);
   }
