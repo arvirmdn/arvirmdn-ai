@@ -56,15 +56,21 @@ async function uploadSingleFile(file) {
     const fd = new FormData();
     fd.append('file', file, file.name);
     const res = await fetch('/api/upload', { method: 'POST', body: fd });
-    const data = await res.json();
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server merespons dengan format tidak terduga (status ${res.status}).`);
+    }
     if (!res.ok) throw new Error(data.error || 'Upload gagal');
 
     pendingAttachments.push(data);
     updateAttachmentChip(chip, data);
   } catch (err) {
-    chip.querySelector('.attachment-name').textContent = 'Gagal upload: ' + file.name;
+    chip.querySelector('.attachment-name').textContent = 'Gagal: ' + err.message;
     chip.querySelector('.attachment-name').style.color = 'var(--danger)';
-    setTimeout(() => chip.remove(), 2500);
+    setTimeout(() => chip.remove(), 4500);
   }
 }
 
