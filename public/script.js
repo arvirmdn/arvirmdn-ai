@@ -191,8 +191,8 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
 
-    thinkingEl.querySelector('.bubble').textContent = data.reply;
     thinkingEl.querySelector('.bubble').classList.remove('thinking');
+    renderMarkdown(thinkingEl.querySelector('.bubble'), data.reply);
     if (data.zipBase64) {
       renderZipDownload(thinkingEl, data.zipBase64, data.zipName, data.files);
     }
@@ -210,7 +210,7 @@ function renderUserMessage(text, attachments) {
   const el = document.createElement('div');
   el.className = 'msg user';
   const chips = attachments.map(a => `<div class="file-chip">📎 ${escapeHtml(a.name)}</div>`).join('');
-  el.innerHTML = `<div class="avatar">A</div><div class="bubble">${escapeHtml(text)}${chips}</div>`;
+  el.innerHTML = `<div class="avatar">A</div><div class="bubble"><div class="user-text">${escapeHtml(text)}</div>${chips}</div>`;
   messagesEl.appendChild(el);
   scrollToBottom();
 }
@@ -222,6 +222,15 @@ function renderAssistantMessage(text, thinking = false) {
   messagesEl.appendChild(el);
   scrollToBottom();
   return el;
+}
+
+function renderMarkdown(bubbleEl, text) {
+  try {
+    const html = marked.parse(text, { breaks: true });
+    bubbleEl.innerHTML = DOMPurify.sanitize(html);
+  } catch (e) {
+    bubbleEl.textContent = text;
+  }
 }
 
 function renderZipDownload(msgEl, zipBase64, zipName, files) {

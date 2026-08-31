@@ -98,9 +98,12 @@ html, body {
   flex: 1;
   line-height: 1.65;
   font-size: 14.5px;
-  white-space: pre-wrap;
   word-break: break-word;
   padding-top: 3px;
+}
+
+.msg .bubble .user-text {
+  white-space: pre-wrap;
 }
 .msg .bubble code {
   background: var(--panel-2);
@@ -114,6 +117,58 @@ html, body {
   padding: 12px 14px;
   border-radius: 8px;
   overflow-x: auto;
+}
+.msg .bubble pre code { background: none; padding: 0; }
+
+.msg .bubble p { margin: 0 0 10px; }
+.msg .bubble p:last-child { margin-bottom: 0; }
+.msg .bubble h1, .msg .bubble h2, .msg .bubble h3, .msg .bubble h4 {
+  color: var(--text);
+  margin: 16px 0 8px;
+  line-height: 1.35;
+}
+.msg .bubble h1:first-child, .msg .bubble h2:first-child,
+.msg .bubble h3:first-child, .msg .bubble h4:first-child { margin-top: 0; }
+.msg .bubble h1 { font-size: 19px; }
+.msg .bubble h2 { font-size: 17.5px; }
+.msg .bubble h3 { font-size: 15.5px; }
+.msg .bubble h4 { font-size: 14.5px; }
+.msg .bubble strong { color: var(--text); font-weight: 700; }
+.msg .bubble ul, .msg .bubble ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.msg .bubble li { margin: 4px 0; }
+.msg .bubble li > ul, .msg .bubble li > ol { margin: 4px 0; }
+.msg .bubble hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+.msg .bubble blockquote {
+  border-left: 3px solid var(--accent-dim);
+  margin: 0 0 10px;
+  padding: 2px 12px;
+  color: var(--text-dim);
+}
+.msg .bubble a { color: var(--accent); }
+.msg .bubble table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 12px;
+  font-size: 13px;
+  display: block;
+  overflow-x: auto;
+}
+.msg .bubble th, .msg .bubble td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.msg .bubble th {
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 600;
 }
 
 .msg .file-chip {
