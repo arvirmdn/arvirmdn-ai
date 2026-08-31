@@ -3,7 +3,8 @@ const router = express.Router();
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 // Model gratis Groq yang kuat untuk coding & chat umum
-const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+// (llama-3.3-70b-versatile sudah di-deprecate Groq per pertengahan 2026, ganti ke gpt-oss)
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 router.post('/', async (req, res) => {
   const { messages } = req.body;
