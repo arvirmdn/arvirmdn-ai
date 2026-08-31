@@ -179,7 +179,8 @@ form.addEventListener('submit', async (e) => {
   } else {
     userContent = fullText;
   }
-  history.push({ role: 'user', content: userContent });
+  const userMessage = { role: 'user', content: userContent };
+  history.push(userMessage);
 
   textInput.value = '';
   textInput.style.height = 'auto';
@@ -202,6 +203,13 @@ form.addEventListener('submit', async (e) => {
     renderMarkdown(thinkingEl.querySelector('.bubble'), data.reply);
     if (data.zipBase64) {
       renderZipDownload(thinkingEl, data.zipBase64, data.zipName, data.files);
+    }
+    // Setelah AI selesai menganalisis foto, ganti isi pesan bergambar di riwayat jadi teks ringkas saja.
+    // Supaya foto (base64, bisa beberapa MB) tidak ikut terkirim ulang di setiap pesan berikutnya.
+    if (Array.isArray(userMessage.content)) {
+      const textPart = userMessage.content.find(c => c.type === 'text');
+      const imgCount = userMessage.content.filter(c => c.type === 'image_url').length;
+      userMessage.content = (textPart ? textPart.text + '\n' : '') + `[${imgCount} foto terlampir — sudah dijelaskan AI di atas]`;
     }
     history.push({ role: 'assistant', content: data.rawReply || data.reply });
   } catch (err) {
