@@ -1,0 +1,20 @@
+{
+  "name": "web-ai-chat",
+  "version": "1.0.0",
+  "description": "Web AI chat mirip Claude - pakai Groq API, support upload & baca isi file ZIP",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
