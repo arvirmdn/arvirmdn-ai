@@ -131,6 +131,34 @@ html, body {
 
 .thinking { color: var(--text-dim); font-style: italic; }
 
+.zip-download-box {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.zip-download-files {
+  padding: 8px 12px;
+  background: var(--panel-2);
+}
+.zip-download-files:empty { display: none; padding: 0; }
+.zip-download-file {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+.zip-download-btn {
+  display: block;
+  text-align: center;
+  padding: 10px 12px;
+  background: var(--accent);
+  color: #14231d;
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+.zip-download-btn:hover { background: var(--accent-dim); }
+
 .composer-wrap {
   flex-shrink: 0;
   padding: 10px 20px calc(18px + env(safe-area-inset-bottom, 0px));

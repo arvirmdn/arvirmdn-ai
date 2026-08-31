@@ -186,19 +186,17 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          { role: 'system', content: 'Kamu adalah asisten AI yang membantu, jawab dalam bahasa Indonesia kecuali diminta lain. Kamu bisa membaca isi file teks dan isi file zip yang dilampirkan user di dalam pesan mereka.' },
-          ...history
-        ]
-      })
+      body: JSON.stringify({ messages: history })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
 
     thinkingEl.querySelector('.bubble').textContent = data.reply;
     thinkingEl.querySelector('.bubble').classList.remove('thinking');
-    history.push({ role: 'assistant', content: data.reply });
+    if (data.zipBase64) {
+      renderZipDownload(thinkingEl, data.zipBase64, data.zipName, data.files);
+    }
+    history.push({ role: 'assistant', content: data.rawReply || data.reply });
   } catch (err) {
     thinkingEl.querySelector('.bubble').textContent = 'Error: ' + err.message;
     thinkingEl.querySelector('.bubble').classList.remove('thinking');
@@ -224,6 +222,35 @@ function renderAssistantMessage(text, thinking = false) {
   messagesEl.appendChild(el);
   scrollToBottom();
   return el;
+}
+
+function renderZipDownload(msgEl, zipBase64, zipName, files) {
+  const bubble = msgEl.querySelector('.bubble');
+  const box = document.createElement('div');
+  box.className = 'zip-download-box';
+
+  const fileList = (files || []).map(f => `<div class="zip-download-file">📄 ${escapeHtml(f.name)}</div>`).join('');
+
+  box.innerHTML = `
+    <div class="zip-download-files">${fileList}</div>
+    <a class="zip-download-btn" download="${escapeHtml(zipName || 'kode.zip')}">
+      ⬇ Download ${escapeHtml(zipName || 'kode.zip')}
+    </a>
+  `;
+
+  try {
+    const byteChars = atob(zipBase64);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    box.querySelector('.zip-download-btn').href = url;
+  } catch (e) {
+    box.querySelector('.zip-download-btn').textContent = 'Gagal menyiapkan file zip';
+  }
+
+  bubble.appendChild(box);
 }
 
 function scrollToBottom() {
