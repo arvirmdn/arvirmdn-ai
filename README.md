@@ -3,7 +3,7 @@
 Chat AI ala Claude, pakai Groq API (gratis), bisa upload file — termasuk `.zip` — dan membaca isinya, nama file tidak diubah sama sekali.
 
 ## Fitur
-- Chat dengan AI (model default: `llama-3.3-70b-versatile` via Groq, bisa diganti lewat env `GROQ_MODEL`)
+- Chat dengan AI (model default: `openai/gpt-oss-120b` via Groq, bisa diganti lewat env `GROQ_MODEL`)
 - Upload file apapun, disimpan dengan **nama file asli**
 - Kalau yang diupload `.zip`: otomatis menampilkan daftar isi zip, dan kamu bisa klik file di dalamnya untuk dibaca isinya lalu disertakan ke pesan ke AI
 - Tanpa login (bisa ditambah nanti kalau perlu)
@@ -37,14 +37,15 @@ git push -u origin main
 3. Railway otomatis mendeteksi Node.js dan menjalankan `npm install` + `npm start`.
 4. Buka tab **Variables** di project Railway, tambahkan:
    - `GROQ_API_KEY` = api key kamu dari Groq
-   - `GROQ_MODEL` = `llama-3.3-70b-versatile` (opsional, ini sudah default)
+   - `GROQ_MODEL` = `openai/gpt-oss-120b` (opsional, ini sudah default)
 5. Railway akan kasih domain publik otomatis (bagian **Settings → Networking → Generate Domain**). Klik itu, tunggu build selesai, lalu buka domainnya.
 
 Setiap kali kamu `git push` ke `main`, Railway otomatis re-deploy.
 
 ## Catatan penting
-- File yang diupload disimpan di folder `uploads/` di server. Railway memakai **ephemeral filesystem** — artinya file yang diupload bisa hilang setiap kali server di-restart/redeploy. Ini cukup untuk sesi chat berjalan (baca isi zip, tanya ke AI), tapi jangan dipakai sebagai penyimpanan permanen. Kalau nanti butuh penyimpanan permanen, tambahkan storage eksternal (misal: Cloudflare R2 / AWS S3 / Railway Volume).
-- Batas ukuran file upload saat ini 25MB (bisa diubah di `routes/upload.js`, bagian `limits.fileSize`).
+- File upload diproses langsung di **memori server** (tidak ditulis ke disk), lalu isinya (kalau zip/teks) dikirim balik ke browser dalam satu kali request. Ini menghindari masalah *ephemeral filesystem* Railway (file hilang tiap redeploy) dan membuat fitur baca-isi-zip lebih andal.
+- Batas ukuran file upload saat ini 20MB per file (bisa diubah di `routes/upload.js`, bagian `limits.fileSize`).
+- Bisa upload **beberapa file sekaligus** dalam satu pesan — setiap file jadi lampiran terpisah, isinya (kalau teks/zip) otomatis disertakan ke konteks yang dikirim ke AI.
 - Model Groq yang dipakai gratis dan cepat, tapi ada rate limit dari Groq — kalau kena limit, tunggu beberapa saat atau ganti model di `.env`.
 
 ## Struktur proyek
