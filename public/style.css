@@ -202,17 +202,17 @@ html, body {
   color: var(--text-dim);
   padding: 2px 0;
 }
-.zip-download-btn {
+.bubble .zip-download-btn {
   display: block;
   text-align: center;
   padding: 10px 12px;
   background: var(--accent);
-  color: #14231d;
+  color: #14231d !important;
   font-weight: 600;
   font-size: 13.5px;
   text-decoration: none;
 }
-.zip-download-btn:hover { background: var(--accent-dim); }
+.bubble .zip-download-btn:hover { background: var(--accent-dim); }
 
 .composer-wrap {
   flex-shrink: 0;
