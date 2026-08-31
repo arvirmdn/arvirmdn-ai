@@ -1,1 +1,55 @@
-p
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asisten AI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">Asisten AI</span>
+      </div>
+      <button id="newChatBtn" class="ghost-btn">Percakapan baru</button>
+    </header>
+
+    <main class="chat-area" id="chatArea">
+      <div class="empty-state" id="emptyState">
+        <h1>Ada yang bisa dibantu?</h1>
+        <p>Kirim pesan, atau lampirkan file — termasuk .zip — untuk saya baca isinya.</p>
+      </div>
+      <div class="messages" id="messages"></div>
+    </main>
+
+    <div class="composer-wrap">
+      <div id="attachmentTray" class="attachment-tray"></div>
+      <form id="composerForm" class="composer">
+        <button type="button" id="attachBtn" class="icon-btn" title="Lampirkan file">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 11.5V17a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5h6.5A2.5 2.5 0 0 1 17 5.5V15a2.5 2.5 0 0 1-5 0V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <input type="file" id="fileInput" hidden />
+        <textarea id="textInput" placeholder="Tulis pesan..." rows="1"></textarea>
+        <button type="submit" id="sendBtn" class="send-btn" title="Kirim">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <p class="hint">Model: Groq (Llama 3.3 70B) &middot; File .zip bisa dibuka & dibaca isinya</p>
+    </div>
+  </div>
+
+  <div id="zipModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="zipModalTitle">Isi ZIP</h3>
+        <button id="zipModalClose" class="icon-btn">&times;</button>
+      </div>
+      <div id="zipModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
