@@ -186,6 +186,29 @@ html, body {
 
 .thinking { color: var(--text-dim); font-style: italic; }
 
+.attachment-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.msg-image {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 10px;
+  margin-top: 6px;
+  object-fit: cover;
+}
+
+.msg .bubble img {
+  max-width: 100%;
+  border-radius: 10px;
+  margin-top: 6px;
+}
+
 .zip-download-box {
   margin-top: 10px;
   border: 1px solid var(--border);
@@ -314,18 +337,16 @@ html, body {
 .modal-body { padding: 10px 16px 16px; overflow-y: auto; }
 
 .zip-entry-row {
-  display: flex; align-items: center; justify-content: space-between;
   padding: 8px 6px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
 .zip-entry-row:last-child { border-bottom: none; }
+.zip-entry-row > div:first-child { display: flex; align-items: center; justify-content: space-between; }
 .zip-entry-name { color: var(--text); word-break: break-all; }
 .zip-entry-size { color: var(--text-dim); font-size: 11.5px; margin-left: 8px; flex-shrink: 0; }
-.zip-entry-row button {
-  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 6px; padding: 4px 9px; font-size: 12px; cursor: pointer; flex-shrink: 0; margin-left: 8px;
-}
+.zip-entry-status { display: block; color: var(--text-dim); font-size: 11.5px; margin-top: 3px; }
+.zip-entry-status.ok { color: var(--accent); }
 
 .zip-preview {
   background: var(--panel-2);

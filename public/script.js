@@ -59,7 +59,6 @@ async function uploadSingleFile(file) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload gagal');
 
-    data.includedEntries = {};
     pendingAttachments.push(data);
     updateAttachmentChip(chip, data);
   } catch (err) {
@@ -91,7 +90,9 @@ function updateAttachmentChip(chipEl, data) {
   if (data.isZip) {
     extra = `<button type="button" class="view-zip">Lihat isi (${(data.entries || []).length} file)</button>`;
   }
+  const thumb = data.isImage ? `<img class="attachment-thumb" src="${data.dataUrl}" alt="">` : '';
   chipEl.innerHTML = `
+    ${thumb}
     <span class="attachment-name">${escapeHtml(data.name)} · ${sizeKb} KB</span>
     ${extra}
     <button type="button" title="Hapus">&times;</button>
@@ -105,7 +106,7 @@ function updateAttachmentChip(chipEl, data) {
   }
 }
 
-// ---- Zip modal ----
+// ---- Zip modal (cuma buat lihat isinya — semua file teks otomatis sudah dikirim ke AI) ----
 function openZipModal(data) {
   zipModalTitle.textContent = data.name;
   zipModalBody.innerHTML = '';
@@ -116,26 +117,18 @@ function openZipModal(data) {
     (data.entries || []).filter(e => !e.isDirectory).forEach(entry => {
       const row = document.createElement('div');
       row.className = 'zip-entry-row';
-      const included = data.includedEntries[entry.entryName] !== undefined;
+      const status = entry.content !== undefined
+        ? '<span class="zip-entry-status ok">✓ Otomatis dibaca AI</span>'
+        : '<span class="zip-entry-status">Tidak dibaca (terlalu besar / bukan file teks)</span>';
       row.innerHTML = `
         <div><span class="zip-entry-name">${escapeHtml(entry.entryName)}</span><span class="zip-entry-size">${(entry.size/1024).toFixed(1)} KB</span></div>
-        <button type="button">${included ? 'Sudah disertakan' : 'Baca & sertakan'}</button>
+        ${status}
       `;
-      const btn = row.querySelector('button');
-      if (entry.content === undefined) {
-        btn.textContent = 'Tidak bisa dibaca';
-        btn.disabled = true;
-      } else {
-        btn.addEventListener('click', () => {
-          if (data.includedEntries[entry.entryName] !== undefined) return;
-          data.includedEntries[entry.entryName] = entry.content;
-          btn.textContent = 'Sudah disertakan';
-
-          const pre = document.createElement('div');
-          pre.className = 'zip-preview';
-          pre.textContent = entry.content;
-          row.after(pre);
-        });
+      if (entry.content !== undefined) {
+        const pre = document.createElement('div');
+        pre.className = 'zip-preview';
+        pre.textContent = entry.content;
+        row.appendChild(pre);
       }
       zipModalBody.appendChild(row);
     });
@@ -153,15 +146,18 @@ form.addEventListener('submit', async (e) => {
 
   emptyState.style.display = 'none';
 
-  // Bangun konteks lampiran jadi teks yang disisipkan ke pesan user
+  // Bangun konteks lampiran jadi teks yang disisipkan ke pesan user (kecuali gambar, ditangani terpisah)
+  const imageAttachments = pendingAttachments.filter(a => a.isImage);
   let contextBlock = '';
   for (const att of pendingAttachments) {
+    if (att.isImage) continue;
     if (att.isZip) {
       const list = (att.entries || []).filter(e => !e.isDirectory).map(e => '- ' + e.entryName).join('\n');
       contextBlock += `\n\n[File ZIP terlampir: ${att.name}]\nDaftar isi:\n${list}\n`;
-      for (const [entryName, content] of Object.entries(att.includedEntries || {})) {
-        contextBlock += `\n--- Isi "${entryName}" ---\n${content}\n`;
-      }
+      // Semua file teks yang berhasil dibaca server otomatis disertakan, tanpa perlu klik manual
+      (att.entries || []).filter(e => !e.isDirectory && e.content !== undefined).forEach(e => {
+        contextBlock += `\n--- Isi "${e.entryName}" ---\n${e.content}\n`;
+      });
     } else if (att.preview) {
       contextBlock += `\n\n[File terlampir: ${att.name}]\n${att.preview}\n`;
     } else {
@@ -171,7 +167,18 @@ form.addEventListener('submit', async (e) => {
 
   renderUserMessage(text, pendingAttachments);
 
-  const userContent = text + contextBlock;
+  const fullText = text + contextBlock;
+  let userContent;
+  if (imageAttachments.length > 0) {
+    // Format multimodal: teks + gambar dalam satu pesan, supaya model vision bisa "melihat" fotonya
+    userContent = [];
+    if (fullText.trim()) userContent.push({ type: 'text', text: fullText });
+    imageAttachments.forEach(img => {
+      userContent.push({ type: 'image_url', image_url: { url: img.dataUrl } });
+    });
+  } else {
+    userContent = fullText;
+  }
   history.push({ role: 'user', content: userContent });
 
   textInput.value = '';
@@ -209,7 +216,10 @@ form.addEventListener('submit', async (e) => {
 function renderUserMessage(text, attachments) {
   const el = document.createElement('div');
   el.className = 'msg user';
-  const chips = attachments.map(a => `<div class="file-chip">📎 ${escapeHtml(a.name)}</div>`).join('');
+  const chips = attachments.map(a => a.isImage
+    ? `<img class="msg-image" src="${a.dataUrl}" alt="${escapeHtml(a.name)}">`
+    : `<div class="file-chip">📎 ${escapeHtml(a.name)}</div>`
+  ).join('');
   el.innerHTML = `<div class="avatar">A</div><div class="bubble"><div class="user-text">${escapeHtml(text)}</div>${chips}</div>`;
   messagesEl.appendChild(el);
   scrollToBottom();
