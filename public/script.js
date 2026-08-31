@@ -206,8 +206,7 @@ form.addEventListener('submit', async (e) => {
     thinkingEl.querySelector('.bubble').classList.remove('thinking');
   } finally {
     sendBtn.disabled = false;
-    messagesEl.scrollIntoView({ block: 'end' });
-    window.scrollTo(0, document.body.scrollHeight);
+    scrollToBottom();
   }
 });
 

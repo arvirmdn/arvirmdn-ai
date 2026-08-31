@@ -19,12 +19,16 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .topbar {
@@ -129,7 +133,7 @@ html, body {
 
 .composer-wrap {
   flex-shrink: 0;
-  padding: 10px 20px 18px;
+  padding: 10px 20px calc(18px + env(safe-area-inset-bottom, 0px));
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
@@ -255,5 +259,5 @@ html, body {
 
 @media (max-width: 640px) {
   .empty-state { margin-top: 6vh; }
-  .composer-wrap { padding: 10px 12px 14px; }
+  .composer-wrap { padding: 10px 12px calc(22px + env(safe-area-inset-bottom, 0px)); }
 }
