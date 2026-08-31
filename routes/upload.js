@@ -18,6 +18,7 @@ const TEXT_EXT = ['.txt', '.md', '.js', '.ts', '.jsx', '.tsx', '.json', '.html',
 
 const MAX_ENTRY_BYTES = 200 * 1024; // file teks di dalam zip yang lebih besar dari ini tidak otomatis dibaca
 const MAX_PREVIEW_CHARS = 4000;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB — cukup buat foto HP normal, tapi tidak bikin request kepenuhan
 
 function safeReadText(buffer, maxChars = MAX_PREVIEW_CHARS) {
   try {
@@ -37,6 +38,10 @@ router.post('/', upload.single('file'), (req, res) => {
   const buffer = req.file.buffer;
 
   const isImage = !!(req.file.mimetype && req.file.mimetype.startsWith('image/'));
+
+  if (isImage && buffer.length > MAX_IMAGE_BYTES) {
+    return res.status(400).json({ error: `Foto terlalu besar (${(buffer.length / 1024 / 1024).toFixed(1)}MB). Maksimal 5MB — coba kompres dulu atau pakai foto resolusi lebih kecil.` });
+  }
 
   const result = {
     name: originalName,
