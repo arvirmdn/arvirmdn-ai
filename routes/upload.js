@@ -36,13 +36,19 @@ router.post('/', upload.single('file'), (req, res) => {
   const ext = path.extname(originalName).toLowerCase();
   const buffer = req.file.buffer;
 
+  const isImage = !!(req.file.mimetype && req.file.mimetype.startsWith('image/'));
+
   const result = {
     name: originalName,
     size: req.file.size,
-    isZip: ext === '.zip'
+    isZip: ext === '.zip',
+    isImage
   };
 
-  if (ext === '.zip') {
+  if (isImage) {
+    // Simpan sebagai data URL base64 supaya bisa langsung dikirim ke model vision
+    result.dataUrl = `data:${req.file.mimetype};base64,${buffer.toString('base64')}`;
+  } else if (ext === '.zip') {
     try {
       const zip = new AdmZip(buffer);
       result.entries = zip.getEntries().map(e => {
