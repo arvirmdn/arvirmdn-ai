@@ -14,7 +14,7 @@ const zipModalBody = document.getElementById('zipModalBody');
 const zipModalClose = document.getElementById('zipModalClose');
 
 let history = []; // {role, content}
-let pendingAttachments = []; // {name, size, isZip, path, entries, preview, includedEntries: {entryName: content}}
+let pendingAttachments = []; // {name, size, isZip, entries, preview, includedEntries: {entryName: content}}
 
 // ---- Textarea auto-resize ----
 textInput.addEventListener('input', () => {
@@ -41,10 +41,15 @@ newChatBtn.addEventListener('click', () => {
 attachBtn.addEventListener('click', () => fileInput.click());
 
 fileInput.addEventListener('change', async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+  const files = Array.from(fileInput.files || []);
   fileInput.value = '';
+  if (files.length === 0) return;
 
+  // Upload semua file yang dipilih secara paralel, masing-masing jadi lampiran sendiri
+  files.forEach(uploadSingleFile);
+});
+
+async function uploadSingleFile(file) {
   const chip = renderAttachmentChip({ name: file.name, size: file.size, uploading: true });
 
   try {
@@ -62,7 +67,7 @@ fileInput.addEventListener('change', async () => {
     chip.querySelector('.attachment-name').style.color = 'var(--danger)';
     setTimeout(() => chip.remove(), 2500);
   }
-});
+}
 
 function renderAttachmentChip(info) {
   const el = document.createElement('div');
@@ -117,28 +122,21 @@ function openZipModal(data) {
         <button type="button">${included ? 'Sudah disertakan' : 'Baca & sertakan'}</button>
       `;
       const btn = row.querySelector('button');
-      btn.addEventListener('click', async () => {
-        if (data.includedEntries[entry.entryName] !== undefined) return;
-        btn.textContent = 'Membaca...';
-        try {
-          const res = await fetch('/api/upload/zip-entry', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ zipPath: data.path, entryName: entry.entryName })
-          });
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.error);
-          data.includedEntries[entry.entryName] = result.content;
+      if (entry.content === undefined) {
+        btn.textContent = 'Tidak bisa dibaca';
+        btn.disabled = true;
+      } else {
+        btn.addEventListener('click', () => {
+          if (data.includedEntries[entry.entryName] !== undefined) return;
+          data.includedEntries[entry.entryName] = entry.content;
           btn.textContent = 'Sudah disertakan';
 
           const pre = document.createElement('div');
           pre.className = 'zip-preview';
-          pre.textContent = result.content;
+          pre.textContent = entry.content;
           row.after(pre);
-        } catch (e) {
-          btn.textContent = 'Gagal, coba lagi';
-        }
-      });
+        });
+      }
       zipModalBody.appendChild(row);
     });
   }
