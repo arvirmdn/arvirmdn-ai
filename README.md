@@ -1,28 +1,30 @@
-# Web AI Chat — AIHubMix Edition
+# ARVIRMDN AI Pro — Groq Edition
 
-Chat AI ala Claude, pakai **AIHubMix API**, bisa upload file — termasuk `.zip` — dan membaca isinya, nama file tidak diubah sama sekali.
+Asisten AI yang menggabungkan kekuatan **Kimi** (long context & file understanding) dan **Claude** (honest reasoning & anti-hallucination). Pakai Groq API (gratis), bisa upload file & foto, kode langsung jadi ZIP download.
 
-## Fitur
-- Chat dengan AI (model default: `coding-kimi-k3-free` via AIHubMix, bisa diganti lewat env `AIHUB_MODEL`)
-- Upload file apapun, disimpan dengan **nama file asli**
-- Kalau yang diupload `.zip`: otomatis menampilkan daftar isi zip, dan kamu bisa klik file di dalamnya untuk dibaca isinya lalu disertakan ke pesan ke AI
-- Password gate sederhana (1 password rahasia)
-- Support multi API key dengan **fallback otomatis** — kalau satu key kena limit/error, server otomatis pindah ke key berikutnya
+## Fitur Utama
+- **Chat AI Pro** — Model Groq (`llama-3.3-70b-versatile`) dengan system prompt khusus anti-halu & detailed reasoning
+- **Baca File Apapun** — Upload `.zip`, `.pdf`, `.txt`, `.js`, `.html`, dll. Kalau ZIP, bisa browse isinya dan pilih file yang mau dibaca AI
+- **Baca Foto/Gambar** — Upload screenshot error, desain UI, atau dokumen. AI otomatis pakai vision model (`llama-3.2-11b-vision-instruct`)
+- **Kode Auto-ZIP** — AI tidak menampilkan kode panjang di chat. Kode otomatis diekstrak jadi file ZIP yang bisa di-download
+- **Multi API Key + Fallback** — Bisa pakai beberapa Groq API key sekaligus. Kalau satu kena limit, otomatis pindah ke key berikutnya
+- **Password Gate** — Web dilindungi password rahasia
 
-## Jalankan lokal
+## Jalankan Lokal
 ```bash
 npm install
-# Buat file .env di root, isi:
-# AIHUB_API_KEY=sk-xxxxxx
-# AIHUB_MODEL=coding-kimi-k3-free
-# SITE_PASSWORD=password-rahasia-kamu
+# Buat file .env di root:
+# GROQ_API_KEY=gsk-xxxxxx
+# GROQ_MODEL=llama-3.3-70b-versatile
+# GROQ_VISION_MODEL=llama-3.2-11b-vision-instruct
+# SITE_PASSWORD=password-rahasia
 # SESSION_SECRET=string-acak-panjang
 # NODE_ENV=development
 npm start
 ```
 Buka `http://localhost:3000`.
 
-Dapat API key gratis di https://aihubmix.com → Sign Up → API Keys → Create Key
+Dapat API key gratis di https://console.groq.com/keys
 
 ## Deploy ke GitHub + Railway
 
@@ -30,7 +32,7 @@ Dapat API key gratis di https://aihubmix.com → Sign Up → API Keys → Create
 ```bash
 git init
 git add .
-git commit -m "Initial commit"
+git commit -m "ARVIRMDN AI Pro"
 git branch -M main
 git remote add origin https://github.com/USERNAME/NAMA-REPO.git
 git push -u origin main
@@ -38,56 +40,42 @@ git push -u origin main
 
 ### 2. Deploy di Railway
 1. Buka https://railway.app, login pakai GitHub.
-2. Klik **New Project** → **Deploy from GitHub repo** → pilih repo ini.
+2. **New Project** → **Deploy from GitHub repo** → pilih repo ini.
 3. Railway otomatis mendeteksi Node.js dan menjalankan `npm install` + `npm start`.
-4. Buka tab **Variables** di project Railway, tambahkan:
+4. Buka tab **Variables**, tambahkan:
 
 | Variable | Value | Wajib? |
 |----------|-------|--------|
-| `AIHUB_API_KEY` | `sk-xxxxxx` (satu key dari AIHubMix) | ✅ WAJIB |
-| `AIHUB_API_KEYS` | `sk-key1,sk-key2,sk-key3` (beberapa key, fallback otomatis) | ⚠️ Opsional (kalau punya banyak key) |
-| `AIHUB_MODEL` | `coding-kimi-k3-free` | ❌ Opsional (default: coding-kimi-k3-free) |
-| `AIHUB_VISION_MODEL` | `claude-opus-5` | ❌ Opsional (default: claude-opus-5) |
-| `SITE_PASSWORD` | Password rahasia buat gerbang masuk web | ✅ WAJIB |
+| `GROQ_API_KEY` | `gsk-xxxxxx` (satu key dari Groq) | ✅ WAJIB |
+| `GROQ_API_KEYS` | `gsk-key1,gsk-key2` (beberapa key, fallback otomatis) | ⚠️ Opsional |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | ❌ Opsional |
+| `GROQ_VISION_MODEL` | `llama-3.2-11b-vision-instruct` | ❌ Opsional |
+| `SITE_PASSWORD` | Password rahasia buat gerbang masuk | ✅ WAJIB |
 | `SESSION_SECRET` | String acak panjang untuk enkripsi cookie | ✅ WAJIB |
-| `NODE_ENV` | `production` | ❌ Opsional (biar cookie lebih aman) |
+| `NODE_ENV` | `production` | ❌ Opsional |
 
-5. Railway akan kasih domain publik otomatis (bagian **Settings → Networking → Generate Domain**). Klik itu, tunggu build selesai, lalu buka domainnya.
+5. **Settings → Networking → Generate Domain** → dapat URL publik.
 
-Setiap kali kamu `git push` ke `main`, Railway otomatis re-deploy.
+Setiap `git push` ke `main`, Railway otomatis re-deploy.
 
-## Model yang Tersedia di AIHubMix (Gratis & Berbayar)
+## Gaya AI (Kimi + Claude Hybrid)
 
-| Model | Keterangan | Harga |
-|-------|-----------|-------|
-| `coding-kimi-k3-free` | Kimi K3, khusus coding, gratis | 🆓 Gratis |
-| `claude-opus-5` | Claude terbaru, sangat pintar | 💰 Berbayar |
-| `gpt-4o` | GPT-4o OpenAI | 💰 Berbayar |
-| `deepseek-v3` | DeepSeek V3 | 💰 Berbayar |
+### Anti-Halusinasi (Claude Style)
+- AI akan mengatakan "Saya tidak yakin" kalau tidak tahu
+- Tidak mengarang fakta, data, atau kode yang tidak ada
+- Selalu memeriksa kebenaran sebelum menjawab
 
-> 💡 **Tips**: Kalau mau gratis total, pakai `coding-kimi-k3-free`. Kalau mau model paling pintar dan tidak keberatan bayar, pakai `claude-opus-5`.
+### Long Context & File Understanding (Kimi Style)
+- Bisa memproses banyak file sekaligus dalam satu percakapan
+- Mengingat konteks chat sebelumnya
+- Analisis project secara holistik (terutama kalau upload ZIP)
 
-## Catatan penting
-- File upload diproses langsung di **memori server** (tidak ditulis ke disk), lalu isinya (kalau zip/teks) dikirim balik ke browser dalam satu kali request. Ini menghindari masalah *ephemeral filesystem* Railway (file hilang tiap redeploy) dan membuat fitur baca-isi-zip lebih andal.
-- Batas ukuran file upload saat ini 20MB per file (bisa diubah di `routes/upload.js`, bagian `limits.fileSize`).
-- Bisa upload **beberapa file sekaligus** dalam satu pesan — setiap file jadi lampiran terpisah, isinya (kalau teks/zip) otomatis disertakan ke konteks yang dikirim ke AI.
-- AIHubMix menggunakan format API OpenAI-compatible, jadi struktur request/response sama persis dengan Groq/OpenAI.
+### Code Output Style
+- **Tidak** menampilkan kode panjang di chat
+- Kode otomatis dijadikan file ZIP yang bisa di-download
+- Penjelasan hanya berupa narasi + langkah-langkah
 
-## Struktur proyek
-```
-web-ai-chat/
-├── server.js              # entry point Express
-├── package.json
-├── .env                   # environment variables (jangan di-push ke GitHub!)
-├── public/
-│   ├── index.html         # UI chat
-│   ├── login.html         # Halaman login
-│   ├── script.js          # Logic frontend
-│   └── style.css          # Styling
-├── routes/
-│   ├── auth.js            # Login/logout
-│   ├── chat.js            # Handler chat ke AIHubMix API
-│   ├── aihubKeys.js       # Multi-key fallback logic
-│   └── upload.js          # Handler upload file
-└── uploads/               # Folder upload (di Railway ephemeral)
-```
+## Catatan
+- File upload diproses di memori server (tidak ditulis ke disk) → aman untuk Railway ephemeral filesystem
+- Batas upload 20MB per file
+- Groq free tier punya rate limit. Kalau kena limit, tunggu beberapa saat atau daftar akun Groq baru untuk API key tambahan.
