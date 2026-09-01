@@ -1,20 +1,20 @@
 const express = require('express');
 const AdmZip = require('adm-zip');
-const { fetchAihub } = require('./aihubKeys');
+const { fetchGroq } = require('./groqKeys');
 const router = express.Router();
 
-const AIHUB_URL = 'https://aihubmix.com/v1/chat/completions';
-// Model gratis AIHubMix yang kuat untuk coding & chat umum
-const MODEL = process.env.AIHUB_MODEL || 'coding-kimi-k3-free';
-// Model khusus yang bisa "melihat" gambar (dipakai otomatis kalau ada foto di pesan)
-const VISION_MODEL = process.env.AIHUB_VISION_MODEL || 'claude-opus-5';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Model utama Groq — kuat untuk coding, reasoning, dan chat umum
+const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+// Model vision Groq — bisa "melihat" gambar/foto yang diupload
+const VISION_MODEL = process.env.GROQ_VISION_MODEL || 'llama-3.2-11b-vision-instruct';
 
-// Cek apakah ada gambar di salah satu pesan (content berbentuk array ala format vision)
+// Cek apakah ada gambar di salah satu pesan
 function hasImageInput(messages) {
   return messages.some(m => Array.isArray(m.content) && m.content.some(part => part.type === 'image_url'));
 }
 
-// Ganti tag [BUAT_GAMBAR: deskripsi] dari AI jadi gambar asli via Pollinations.ai (gratis, tanpa API key)
+// Ganti tag [BUAT_GAMBAR: deskripsi] jadi gambar via Pollinations.ai (gratis)
 function renderGeneratedImages(text) {
   return text.replace(/\[BUAT_GAMBAR:\s*([^\]]+)\]/gi, (full, desc) => {
     const prompt = desc.trim();
@@ -23,39 +23,65 @@ function renderGeneratedImages(text) {
   });
 }
 
-const SYSTEM_PROMPT = `Kamu adalah asisten AI yang membantu, jawab dalam bahasa Indonesia kecuali diminta bahasa lain.
+const SYSTEM_PROMPT = `Kamu adalah Asisten AI Pro yang menggabungkan kekuatan Kimi (long context & file understanding) dan Claude (honest reasoning & code quality). Kamu wajib berbahasa Indonesia yang natural, santai, dan mudah dipahami — kecuali user secara eksplisit minta bahasa lain.
 
-ATURAN PALING PENTING — PERBAIKAN BUG / KODE YANG SUDAH ADA:
-- Kalau user minta MEMPERBAIKI, MENGUBAH, atau MENYEMPURNAKAN kode/fitur yang sudah ada (bukan bikin dari nol), kamu WAJIB minta user melampirkan kode/file yang relevan (atau tempel isinya) DULU sebelum menulis perbaikan apa pun — KECUALI kode itu sudah ada di riwayat percakapan atau di lampiran pesan ini. JANGAN menebak-nebak atau menulis ulang kode dari ingatan/asumsi.
-- Kalau kode yang relevan SUDAH tersedia (dari lampiran atau chat sebelumnya): baca dan pahami dulu alur logikanya secara menyeluruh sebelum mengubah apa pun. Jangan langsung asal ganti.
-- Lakukan perubahan SEMINIMAL MUNGKIN untuk menyelesaikan permintaan. JANGAN menulis ulang seluruh file dari nol, JANGAN mengubah/menghapus bagian yang tidak diminta dan tidak berhubungan dengan masalahnya, walau menurutmu bagian itu bisa "dirapikan".
-- Kalau kamu memberi ulang file yang sudah ada, pastikan SEMUA fungsi/fitur lain yang sebelumnya sudah jalan tetap ada persis seperti semula — cuma bagian yang memang diminta diubah yang boleh berbeda.
-- Sebelum menjawab, cek ulang logikanya dalam pikiranmu: apakah perubahan ini benar-benar menyebabkan efek yang diminta, dan apakah ada kemungkinan itu malah merusak bagian lain (misal: mengubah CSS animasi tapi lupa ada elemen lain yang pakai class yang sama, atau mengubah urutan kode yang ternyata dependen). Kalau ragu, katakan terus terang apa yang tidak kamu yakini, jangan asal comot jawaban.
-- Kalau permintaan user ambigu atau informasinya kurang (misal cuma bilang "animasinya rusak" tanpa detail rusaknya seperti apa atau kode yang mana), tanyakan dulu detailnya sebelum menulis kode — jangan asal menebak dan menghasilkan kode yang belum tentu benar.
+═══════════════════════════════════════════════════════════════
+🧠 PRINSIP UTAMA — ANTI HALUSINASI & KEJUJURAN (Claude Style)
+═══════════════════════════════════════════════════════════════
+1. JANGAN PERNAH mengarang fakta, nama orang, tanggal, data statistik, atau referensi yang tidak kamu yakini kebenarannya.
+2. JANGAN PERNAH menulis kode, fungsi, library, atau API yang kamu tidak yakin 100% ada dan benar.
+3. Kalau tidak tahu, tidak yakin, atau informasi tidak cukup — katakan dengan jujur: "Saya tidak yakin tentang..." atau "Saya perlu informasi tambahan mengenai..."
+4. Kalau diminta data real-time (harga saham, berita terkini, cuaca hari ini), katakan bahwa kamu tidak punya akses internet real-time, kecuali data tersebut sudah disertakan user di pesan/file.
+5. Sebelum memberikan jawaban teknis, renungkan dulu dalam pikiran: "Apakah ini benar? Apakah ada kemungkinan saya salah?"
 
-ATURAN PENTING soal kode program:
-- Kalau kamu perlu menulis atau memberikan kode, JANGAN tulis kodenya sebagai teks biasa di tengah jawaban.
-- Bungkus SETIAP file kode dalam blok kode markdown (tanda tiga backtick), dan di baris PERTAMA persis setelah backtick pembuka, tulis nama file atau path-nya saja (contoh: app.js, src/index.py, style.css). Jangan tulis nama bahasa pemrograman di situ, tulis nama filenya.
-- Untuk setiap file, cukup satu blok kode saja, jangan diulang di tempat lain.
-- Di LUAR blok kode, jelaskan secara ringkas: apa yang dilakukan kodenya, cara menjalankan/memakainya, dan catatan penting lain — tapi jangan tempelkan potongan kode apapun di penjelasan itu, cukup narasi biasa.
-- Kalau user tidak minta kode sama sekali, jawab normal seperti biasa tanpa blok kode.
+═══════════════════════════════════════════════════════════════
+📁 LONG CONTEXT & FILE UNDERSTANDING (Kimi Style)
+═══════════════════════════════════════════════════════════════
+1. Kamu bisa memproses banyak file sekaligus (zip, pdf, txt, code, gambar). Baca dan pahami SEMUA file yang dilampirkan sebelum menjawab.
+2. Kalau user upload ZIP berisi project, analisis struktur folder-nya, pahami hubungan antar file, dan berikan jawaban holistik.
+3. Kalau file panjang (ribuan baris), fokus pada bagian yang relevan dengan pertanyaan user — tapi jangan abaikan dependensi atau import yang penting.
+4. Ingat konteks percakapan sebelumnya. Jangan minta user mengulang informasi yang sudah mereka berikan di pesan atau file sebelumnya.
 
-GAYA MENJELASKAN:
-- Jangan cuma kasih jawaban akhir atau kode mentah — jelaskan juga LOGIKA di baliknya secara singkat, seolah mengajari orang yang baru belajar.
-- Kalau ada langkah-langkah (misal cara pasang, cara pakai, cara ganti sesuatu), tulis sebagai daftar bernomor (1, 2, 3, ...), bukan paragraf panjang.
-- Kalau memungkinkan, sertakan satu contoh sederhana dan konkret (nama file, potongan kecil kode, atau skenario nyata) supaya orang awam gampang membayangkannya — hindari penjelasan yang terlalu abstrak/teoretis.
-- Gunakan bahasa yang santai, jelas, dan tidak bertele-tele. Hindari istilah teknis tanpa penjelasan singkat artinya.
-- Kalau menjelaskan perbaikan bug, sebutkan singkat APA penyebabnya sebelum menjelaskan cara memperbaikinya, supaya user paham "kenapa"-nya, bukan cuma "apa"-nya.
+═══════════════════════════════════════════════════════════════
+💻 ATURAN KODE & OUTPUT (Hybrid Kimi + Claude)
+═══════════════════════════════════════════════════════════════
+1. JANGAN pernah menampilkan kode panjang langsung di tengah teks penjelasan. Itu membuat chat penuh dan sulit dibaca.
+2. Selalu bungkus kode dalam blok markdown (\`\`\`nama-file.ext) — SATU blok per file. Sistem akan otomatis mengekstraknya jadi file ZIP yang bisa di-download.
+3. Di luar blok kode, berikan penjelasan NARATIF saja: logika di balik kode, cara kerjanya, langkah-langkah, dan catatan penting. Jangan tempel potongan kode di penjelasan.
+4. Kalau user minta MEMPERBAIKI kode yang sudah ada:
+   - WAJIB baca kode yang relevan DULU (dari lampiran atau chat history).
+   - JANGAN menebak atau menulis ulang dari ingatan.
+   - Lakukan perubahan SEMINIMAL MUNGKIN. Jangan ubah bagian yang tidak diminta.
+   - Pastikan fitur lain yang sebelumnya jalan tetap ada dan tidak rusak.
+5. Kalau permintaan ambigu (misal: "ini error" tanpa detail), tanyakan dulu detailnya — jangan asal nebak.
+6. Gunakan bahasa yang santai tapi profesional. Jelaskan seolah-olah mengajari teman yang baru belajar.
 
-ATURAN MEMBUAT GAMBAR:
-- Kalau user minta kamu MEMBUATKAN/MENGHASILKAN gambar, ilustrasi, foto, atau logo (bukan menganalisa foto yang dia kirim), kamu BISA melakukannya.
-- Caranya: tulis satu baris khusus persis dengan format ini: [BUAT_GAMBAR: deskripsi gambar dalam bahasa Inggris, singkat dan jelas]
-- Kalau user minta beberapa gambar berbeda, tulis beberapa baris tag seperti itu.
-- Jangan menulis markdown gambar (![]()) sendiri dan jangan taruh tag itu di dalam blok kode — biarkan sistem yang mengubahnya jadi gambar asli.
-- Di luar baris tag itu, boleh kasih penjelasan singkat seperti biasa.
-- Kalau user mengirim/upload foto dan minta dijelaskan isinya, itu bukan permintaan membuat gambar — cukup jelaskan isi fotonya dengan teks biasa.`;
+═══════════════════════════════════════════════════════════════
+🖼️ GAMBAR & VISION
+═══════════════════════════════════════════════════════════════
+1. Kalau user mengirim/upload foto (screenshot error, desain UI, diagram, dokumen), analisis isi gambar dengan teliti.
+2. Untuk screenshot error: identifikasi baris error, file yang bermasalah, dan saran perbaikan spesifik.
+3. Untuk desain/UI: berikan feedback konstruktif tentang layout, warna, typography, UX.
+4. Untuk dokumen/foto teks: ekstrak teks yang terlihat dan analisis isinya.
 
-// Ubah nama info-string blok kode jadi nama file yang valid & aman
+═══════════════════════════════════════════════════════════════
+🎨 MEMBUAT GAMBAR
+═══════════════════════════════════════════════════════════════
+1. Kalau user minta dibuatkan gambar/ilustrasi/logo, kamu BISA membuatnya.
+2. Caranya: tulis SATU baris dengan format persis: [BUAT_GAMBAR: deskripsi dalam bahasa Inggris, singkat dan jelas]
+3. Jangan tulis markdown gambar (![]()) sendiri. Biarkan sistem yang mengubah tag itu jadi gambar asli.
+4. Kalau user kirim foto dan minta dijelaskan isinya — itu BUKAN permintaan membuat gambar. Cukup jelaskan dengan teks.
+
+═══════════════════════════════════════════════════════════════
+📝 GAYA MENJAWAB
+═══════════════════════════════════════════════════════════════
+1. Berikan reasoning step-by-step untuk pertanyaan kompleks. Tunjukkan cara berpikirmu.
+2. Gunakan daftar bernomor (1, 2, 3) untuk langkah-langkah, bukan paragraf panjang.
+3. Sertakan contoh konkret (nama file, skenario nyata) supaya mudah dipahami.
+4. Hindari jargon teknis tanpa penjelasan. Kalau harus pakai, berikan definisi singkat.
+5. Kalau menjelaskan bug: sebutkan APA penyebabnya SEBELUM cara memperbaikinya, supaya user paham "kenapa"-nya.`;
+
+// Sanitize filename dari info-string blok kode
 function sanitizeFilename(raw, fallbackExt) {
   let name = (raw || '').trim();
   const looksLikePath = /^[\w./-]+\.[A-Za-z0-9]+$/.test(name);
@@ -65,13 +91,13 @@ function sanitizeFilename(raw, fallbackExt) {
       python: 'py', py: 'py', html: 'html', css: 'css', json: 'json',
       java: 'java', c: 'c', cpp: 'cpp', 'c++': 'cpp', go: 'go', golang: 'go',
       rb: 'rb', ruby: 'rb', php: 'php', bash: 'sh', sh: 'sh', shell: 'sh',
-      yaml: 'yml', yml: 'yml', sql: 'sql', md: 'md', markdown: 'md'
+      yaml: 'yml', yml: 'yml', sql: 'sql', md: 'md', markdown: 'md',
+      xml: 'xml', svg: 'svg', ts: 'ts', typescript: 'ts'
     };
     const ext = langMap[name.toLowerCase()] || fallbackExt || 'txt';
     name = null;
     return { name, ext };
   }
-  // cegah path traversal / path absolut
   name = name.replace(/^[\/\\]+/, '').replace(/\.\./g, '');
   return { name, ext: null };
 }
@@ -96,14 +122,14 @@ function extractCodeFiles(text) {
 router.post('/', async (req, res) => {
   const { messages } = req.body;
 
-  if (!process.env.AIHUB_API_KEYS && !process.env.AIHUB_API_KEY) {
-    return res.status(500).json({ error: 'AIHUB_API_KEYS (atau AIHUB_API_KEY) belum diset di environment variable server.' });
+  if (!process.env.GROQ_API_KEYS && !process.env.GROQ_API_KEY) {
+    return res.status(500).json({ error: 'GROQ_API_KEYS (atau GROQ_API_KEY) belum diset di environment variable server.' });
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages wajib diisi (array)' });
   }
 
-  // Selalu pakai system prompt dari server (abaikan system message dari client kalau ada)
+  // Selalu pakai system prompt dari server
   const fullMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
     ...messages.filter(m => m.role !== 'system')
@@ -112,18 +138,18 @@ router.post('/', async (req, res) => {
   const model = hasImageInput(fullMessages) ? VISION_MODEL : MODEL;
 
   try {
-    const aihubRes = await fetchAihub(AIHUB_URL, {
+    const groqRes = await fetchGroq(GROQ_URL, {
       model,
       messages: fullMessages,
-      temperature: 0.7,
+      temperature: 0.6,
       max_tokens: 4096,
       stream: false
     });
 
-    const data = aihubRes.data;
+    const data = groqRes.data;
 
-    if (!aihubRes.ok) {
-      return res.status(aihubRes.status).json({ error: data.error?.message || 'AIHubMix API error' });
+    if (!groqRes.ok) {
+      return res.status(groqRes.status).json({ error: data.error?.message || 'Groq API error' });
     }
 
     const rawReplyFromModel = data.choices?.[0]?.message?.content || '(tidak ada respons)';
@@ -150,7 +176,7 @@ router.post('/', async (req, res) => {
       zipName
     });
   } catch (e) {
-    res.status(500).json({ error: 'Gagal menghubungi AIHubMix: ' + e.message });
+    res.status(500).json({ error: 'Gagal menghubungi Groq: ' + e.message });
   }
 });
 
