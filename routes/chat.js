@@ -1,5 +1,6 @@
 const express = require('express');
 const AdmZip = require('adm-zip');
+const { fetchGroq } = require('./groqKeys');
 const router = express.Router();
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -96,8 +97,8 @@ function extractCodeFiles(text) {
 router.post('/', async (req, res) => {
   const { messages } = req.body;
 
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: 'GROQ_API_KEY belum diset di environment variable server.' });
+  if (!process.env.GROQ_API_KEYS && !process.env.GROQ_API_KEY) {
+    return res.status(500).json({ error: 'GROQ_API_KEYS (atau GROQ_API_KEY) belum diset di environment variable server.' });
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages wajib diisi (array)' });
@@ -112,22 +113,15 @@ router.post('/', async (req, res) => {
   const model = hasImageInput(fullMessages) ? VISION_MODEL : MODEL;
 
   try {
-    const groqRes = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: fullMessages,
-        temperature: 0.7,
-        max_tokens: 4096,
-        stream: false
-      })
+    const groqRes = await fetchGroq(GROQ_URL, {
+      model,
+      messages: fullMessages,
+      temperature: 0.7,
+      max_tokens: 4096,
+      stream: false
     });
 
-    const data = await groqRes.json();
+    const data = groqRes.data;
 
     if (!groqRes.ok) {
       return res.status(groqRes.status).json({ error: data.error?.message || 'Groq API error' });
