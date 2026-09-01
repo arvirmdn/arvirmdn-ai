@@ -12,7 +12,7 @@ Chat AI ala Claude, pakai Groq API (gratis), bisa upload file — termasuk `.zip
 ```bash
 npm install
 cp .env.example .env
-# edit .env, isi GROQ_API_KEY
+# edit .env, isi GROQ_API_KEY (satu key) atau GROQ_API_KEYS (beberapa key dipisah koma, ada fallback otomatis kalau satu key error/limit)
 npm start
 ```
 Buka `http://localhost:3000`.
@@ -35,8 +35,9 @@ git push -u origin main
 1. Buka https://railway.app, login pakai GitHub.
 2. Klik **New Project** → **Deploy from GitHub repo** → pilih repo ini.
 3. Railway otomatis mendeteksi Node.js dan menjalankan `npm install` + `npm start`.
-4. Buka tab **Variables** di project Railway, tambahkan:
-   - `GROQ_API_KEY` = api key kamu dari Groq
+4. Buka tab **Variables** di project Railway, tambahkan salah satu:
+   - `GROQ_API_KEY` = satu api key dari Groq, ATAU
+   - `GROQ_API_KEYS` = beberapa api key dipisah koma (contoh: `gsk_key1,gsk_key2,gsk_key3`) — kalau satu key kena limit/error, server otomatis pindah ke key berikutnya
    - `GROQ_MODEL` = `openai/gpt-oss-120b` (opsional, ini sudah default)
 5. Railway akan kasih domain publik otomatis (bagian **Settings → Networking → Generate Domain**). Klik itu, tunggu build selesai, lalu buka domainnya.
 
