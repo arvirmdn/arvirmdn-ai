@@ -39,6 +39,9 @@ git push -u origin main
    - `GROQ_API_KEY` = satu api key dari Groq, ATAU
    - `GROQ_API_KEYS` = beberapa api key dipisah koma (contoh: `gsk_key1,gsk_key2,gsk_key3`) — kalau satu key kena limit/error, server otomatis pindah ke key berikutnya
    - `GROQ_MODEL` = `openai/gpt-oss-120b` (opsional, ini sudah default)
+   - `SITE_PASSWORD` = password rahasia buat gerbang masuk web (wajib, siapa saja butuh ini buat bisa akses web-nya)
+   - `SESSION_SECRET` = string acak panjang untuk enkripsi cookie sesi (wajib, isi bebas asal panjang & acak, contoh generate: `openssl rand -hex 32`)
+   - `NODE_ENV` = `production` (biar cookie login lebih aman)
 5. Railway akan kasih domain publik otomatis (bagian **Settings → Networking → Generate Domain**). Klik itu, tunggu build selesai, lalu buka domainnya.
 
 Setiap kali kamu `git push` ke `main`, Railway otomatis re-deploy.
