@@ -1,14 +1,13 @@
 const express = require('express');
 const AdmZip = require('adm-zip');
-const { fetchGroq } = require('./groqKeys');
+const { fetchAihub } = require('./aihubKeys');
 const router = express.Router();
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-// Model gratis Groq yang kuat untuk coding & chat umum
-// (llama-3.3-70b-versatile sudah di-deprecate Groq per pertengahan 2026, ganti ke gpt-oss)
-const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+const AIHUB_URL = 'https://aihubmix.com/v1/chat/completions';
+// Model gratis AIHubMix yang kuat untuk coding & chat umum
+const MODEL = process.env.AIHUB_MODEL || 'coding-kimi-k3-free';
 // Model khusus yang bisa "melihat" gambar (dipakai otomatis kalau ada foto di pesan)
-const VISION_MODEL = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b';
+const VISION_MODEL = process.env.AIHUB_VISION_MODEL || 'claude-opus-5';
 
 // Cek apakah ada gambar di salah satu pesan (content berbentuk array ala format vision)
 function hasImageInput(messages) {
@@ -73,7 +72,7 @@ function sanitizeFilename(raw, fallbackExt) {
     return { name, ext };
   }
   // cegah path traversal / path absolut
-  name = name.replace(/^[/\\]+/, '').replace(/\.\./g, '');
+  name = name.replace(/^[\/\\]+/, '').replace(/\.\./g, '');
   return { name, ext: null };
 }
 
@@ -97,8 +96,8 @@ function extractCodeFiles(text) {
 router.post('/', async (req, res) => {
   const { messages } = req.body;
 
-  if (!process.env.GROQ_API_KEYS && !process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: 'GROQ_API_KEYS (atau GROQ_API_KEY) belum diset di environment variable server.' });
+  if (!process.env.AIHUB_API_KEYS && !process.env.AIHUB_API_KEY) {
+    return res.status(500).json({ error: 'AIHUB_API_KEYS (atau AIHUB_API_KEY) belum diset di environment variable server.' });
   }
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages wajib diisi (array)' });
@@ -113,7 +112,7 @@ router.post('/', async (req, res) => {
   const model = hasImageInput(fullMessages) ? VISION_MODEL : MODEL;
 
   try {
-    const groqRes = await fetchGroq(GROQ_URL, {
+    const aihubRes = await fetchAihub(AIHUB_URL, {
       model,
       messages: fullMessages,
       temperature: 0.7,
@@ -121,10 +120,10 @@ router.post('/', async (req, res) => {
       stream: false
     });
 
-    const data = groqRes.data;
+    const data = aihubRes.data;
 
-    if (!groqRes.ok) {
-      return res.status(groqRes.status).json({ error: data.error?.message || 'Groq API error' });
+    if (!aihubRes.ok) {
+      return res.status(aihubRes.status).json({ error: data.error?.message || 'AIHubMix API error' });
     }
 
     const rawReplyFromModel = data.choices?.[0]?.message?.content || '(tidak ada respons)';
@@ -151,7 +150,7 @@ router.post('/', async (req, res) => {
       zipName
     });
   } catch (e) {
-    res.status(500).json({ error: 'Gagal menghubungi Groq: ' + e.message });
+    res.status(500).json({ error: 'Gagal menghubungi AIHubMix: ' + e.message });
   }
 });
 
